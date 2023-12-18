@@ -4,6 +4,7 @@ import (
 	"go-app/pkg/service"
 	"net/http"
 
+	"github.com/BoyYangZai/go-server-lib/pkg/jwt"
 	"github.com/gin-gonic/gin"
 )
 
@@ -44,7 +45,7 @@ func VerifyCode(c *gin.Context) {
 		println("send mail success!")
 	}
 
-	service.UpdateVarifyCode(to, code)
+	service.UpdateVerifyCode(to, code)
 	c.JSON(http.StatusOK, gin.H{
 		"msg": "verifyCode sent",
 	})
@@ -62,8 +63,9 @@ func Registry(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	isMatched := service.MatchEmailAndKey(requestBody.Email, requestBody.VerifyCode, "EmailVerifyCode")
+	isMatched, matchedUser := service.MatchEmailAndKey(requestBody.Email, requestBody.VerifyCode, "EmailVerifyCode")
 	if isMatched {
+		println(matchedUser.ID)
 		service.InitUser(requestBody.Email, requestBody.Password)
 		c.JSON(http.StatusOK, gin.H{
 			"msg": "registry success",
@@ -87,14 +89,38 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	isMatched := service.MatchEmailAndKey(requestBody.Email, requestBody.Password, "Password")
-	if isMatched {
-		c.JSON(http.StatusOK, gin.H{
-			"msg": "login success",
-		})
-	} else {
-		c.JSON(http.StatusOK, gin.H{
-			"msg": "email and password not match",
-		})
+	isMatched, user := service.MatchEmailAndKey(requestBody.Email, requestBody.Password, "Password")
+
+	jwt.Auth(c, isMatched, user.Username, user.ID)
+
+}
+
+func ViewInfo(c *gin.Context) {
+	user := GetAuthUser()
+	println(user.ID, "11111111")
+	c.JSON(http.StatusOK, gin.H{
+		"userID":         user.ID,
+		"userName":       user.Username,
+		"userEmail":      user.Email,
+		"userAvatar_url": user.AvatarURL,
+	})
+}
+
+type ModifyRequest struct {
+	Username string `jason:"username"`
+}
+
+func ModifyInfo(c *gin.Context) {
+	var requestBody ModifyRequest
+	if err := c.ShouldBindJSON(&requestBody); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
 	}
+
+	service.ModifyInfo(GetAuthUser(), requestBody.Username)
+
+	c.JSON(http.StatusOK, gin.H{
+		"msg": "after update:",
+	})
+	ViewInfo(c)
 }

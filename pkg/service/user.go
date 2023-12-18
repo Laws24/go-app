@@ -22,10 +22,9 @@ type User struct {
 	Extra           string    `gorm:"type:varchar(255);not null" json:"extra"`
 }
 
-var user User
-
-func UpdateVarifyCode(email string, code string) {
+func UpdateVerifyCode(email string, code string) {
 	db := database.Db
+	user := User{}
 	result := db.Where("email = ?", email).First(&user)
 	if result.Error == gorm.ErrRecordNotFound {
 		// 表示未找到匹配的记录
@@ -57,17 +56,18 @@ func UpdOneKeyWhereAnoKey(whereKey string, whereKeyValue any, changeKey string, 
 	}
 }
 
-func MatchEmailAndKey(email string, keyValue string, matchKey string) bool {
+func MatchEmailAndKey(email string, keyValue string, matchKey string) (bool, User) {
 	db := database.Db
+	user := User{}
 	result := db.Where("email = ?", email).First(&user)
 	if result.Error == gorm.ErrRecordNotFound {
 		// 表示未找到匹配的记录
 		fmt.Printf("Email '%s' not found in the users table\n", email)
-		return false
+		return false, user
 	} else if result.Error != nil {
 		// 发生其他错误
 		fmt.Println("Query error:", result.Error)
-		return false
+		return false, user
 	}
 	fieldValue, found := getField(&user, matchKey)
 	if found {
@@ -77,11 +77,13 @@ func MatchEmailAndKey(email string, keyValue string, matchKey string) bool {
 	}
 	// 比较 EmailVerifyCode
 	println(fieldValue, 111111)
-	return fieldValue == keyValue
+	// 返回一个bool和user
+	return fieldValue == keyValue, user
 }
 
 func InitUser(email string, password string) {
 	db := database.Db
+	user := User{}
 	db.Where("email = ?", email).First(&user)
 	username := GenerateRandomString(10)
 	db.Model(&user).Updates(User{Username: username, CreatedTime: time.Now(), Password: password, EmailVerify: 1, AvatarURL: getRandomAvatarURL(username)})
@@ -110,4 +112,42 @@ func getField(obj interface{}, fieldName string) (interface{}, bool) {
 	}
 
 	return field.Interface(), true
+}
+
+func ViewUsername(userID uint64) string {
+	db := database.Db
+	user := User{}
+	result := db.Where("id = ?", userID).First(&user)
+	if result.Error == gorm.ErrRecordNotFound {
+		// 表示未找到匹配的记录
+		fmt.Printf("not found in the users table\n")
+		return "wrong"
+	} else if result.Error != nil {
+		// 发生其他错误
+		fmt.Println("Query error:", result.Error)
+		return "wrong"
+	}
+	return user.Username
+}
+
+func ViewEmail(userID uint64) string {
+	db := database.Db
+	user := User{}
+	result := db.Where("id = ?", userID).First(&user)
+	if result.Error == gorm.ErrRecordNotFound {
+		// 表示未找到匹配的记录
+		fmt.Printf("not found in the users table\n")
+		return "wrong"
+	} else if result.Error != nil {
+		// 发生其他错误
+		fmt.Println("Query error:", result.Error)
+		return "wrong"
+	}
+	return user.Email
+}
+
+func ModifyInfo(user User, username string) bool {
+	db := database.Db
+	db.Model(&user).Update("Username", username)
+	return true
 }

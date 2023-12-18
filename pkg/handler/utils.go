@@ -1,10 +1,14 @@
 package handler
 
 import (
+	"go-app/pkg/service"
 	"math/rand"
 	"net/smtp"
 	"strconv"
 	"strings"
+
+	"github.com/BoyYangZai/go-server-lib/pkg/database"
+	"github.com/BoyYangZai/go-server-lib/pkg/jwt"
 )
 
 func SendMail(user, password, host, to, subject, body, mailtype string) error {
@@ -28,4 +32,12 @@ func generateVerificationCode(length int) string {
 		code += strconv.Itoa(rand.Intn(10)) // 生成随机数字（0-9）
 	}
 	return code
+}
+
+func GetAuthUser() service.User {
+	db := database.Db
+	user := service.User{}
+	println("currentAuthUserID", jwt.CurrentAuthUserId)
+	db.Where("id = ?", jwt.CurrentAuthUserId).First(&user)
+	return user
 }
