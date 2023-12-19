@@ -4,3 +4,7 @@ database:
   Host: 127.0.0.1
   Port: 3306
   DBName: app
+
+  BaseConf:
+  Image:
+    Dir: "data/avatar"

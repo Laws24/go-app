@@ -33,6 +33,7 @@ func CreateRouter() *gin.Engine {
 		user.POST("/login", handler.Login)
 		user.GET("/view-info", jwt.AuthMiddleware(), handler.ViewInfo)
 		user.POST("/modify-info", handler.ModifyInfo)
+		user.POST("/changeAvatar", handler.ChangeAvatar)
 	}
 
 	auth_test := router.Group("/auth-test")

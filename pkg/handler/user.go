@@ -3,6 +3,7 @@ package handler
 import (
 	"go-app/pkg/service"
 	"net/http"
+	"path"
 
 	"github.com/BoyYangZai/go-server-lib/pkg/jwt"
 	"github.com/gin-gonic/gin"
@@ -123,4 +124,22 @@ func ModifyInfo(c *gin.Context) {
 		"msg": "after update:",
 	})
 	ViewInfo(c)
+}
+
+func ChangeAvatar(c *gin.Context) {
+	file, err := c.FormFile("file")
+	if err != nil {
+		println("get file wrong")
+		c.JSON(http.StatusOK, err.Error())
+		return
+	}
+	filepath := path.Join("go-app/data/avatar", file.Filename)
+	err = c.SaveUploadedFile(file, filepath)
+	if err != nil {
+		println("save img wrong")
+		c.JSON(http.StatusOK, err.Error())
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"uploading": "done", "message": "success",
+		"url": "http://" + c.Request.Host + "/go-app/data/avatar/" + file.Filename})
 }
